@@ -13,7 +13,12 @@
  */
 
 @import "bootstrap";
+@import url('https://fonts.googleapis.com/css?family=Ubuntu&display=swap');
 
-.btn {
-    color: #fff !important;
+body {
+    font-family: 'Ubuntu', sans-serif;
+}
+
+.btn-light:hover, .btn-outline-light:hover {
+    color: #343a40 !important;
 }
