@@ -11,11 +11,6 @@ jobs:
           BUNDLE_PATCH: vendor/bundle
           RAILS_ENV: test
     steps:
-      # Database Setup
-      - run:
-          name: Database setup
-          command: bin/rails db:schema:load --trace
-
       # RSpec in parallel
       - run: |
           bundle exec rspec --profile 10 \
