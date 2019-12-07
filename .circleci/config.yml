@@ -14,26 +14,26 @@ jobs:
       # Bundle Install
       - restore_cache:
           keys:
-            - projectmanager-bundle-v2-{{ checksum "Gemfile.lock" }}
+            - projectmanager-bundle-v2-{{ checksum "../Gemfile.lock" }}
             - projectmanager-bundle-v2-
       - run:
           name: Bundle Install
           command: bundle check --path vendor/bundle || bundle install --deployment
       - save_cache:
-          key: projectmanager-bundle-v2-{{ checksum "Gemfile.lock" }}
+          key: projectmanager-bundle-v2-{{ checksum "../Gemfile.lock" }}
           paths:
             - vendor/bundle
 
       # Yarn/Webpack Install
       - restore_cache:
           keys:
-            - projectmanager-yarn-{{ checksum "yarn.lock" }}
+            - projectmanager-yarn-{{ checksum "../yarn.lock" }}
             - projectmanager-yarn-
       - run:
           name: Yarn Install
           command: yarn install --cache-folder ~/.cache/yarn
       - save_cache:
-          key: projectmanager-yarn-{{ checksum "yarn.lock" }}
+          key: projectmanager-yarn-{{ checksum "../yarn.lock" }}
           paths:
             - ~/.cache/yarn
 
