@@ -2,38 +2,53 @@ version: 2
 jobs:
   build:
     parallelism: 3
+    working_directory: ~/projectmanager
     docker:
-      - image: ruby:2.6.5
-      - image: node:8.16.2
-      - image: sqlite3:1.4
-    environment:
-      RAILS_ENV: test
-      RACK_ENV: test
+      - image: circleci/ruby:2.6.5-stretch
+        environment:
+          BUNDLE_JOBS: 3
+          BUNDLE_RETRY: 3
+          BUNDLE_PATCH: vendor/bundle
+          RAILS_ENV: test
     steps:
-      - checkout
-      - run:
-        name: Install System Dependencies
-        command: apt-get update -qq && apt-get install -y build-essential nodejs
+      # Bundle Install
       - restore_cache:
-        key: dependency-cache-{{ checksum "Gemfile.lock" }}
+          keys:
+            - projectmanager-{{ checksum "Gemfile.lock" }}
+            - projectmanager
       - run:
-        name: Install Dependencies
-        command: apt-get install -y libicu52 && apt-get install -y libicu-dev bundle install --path vendor/bundle --frozen --jobs=4 --retry=3 --without development bin/yarn
+          name: Bundle Install
+          command: bundle check --path vendor/bundle || bundle install --deployment
       - save_cache:
-          key: dependency-cache-{{ checksum "Gemfile.lock" }}
+          key: projectmanager-{{ checksum "Gemfile.lock" }}
           paths:
             - vendor/bundle
+
+      # Yarn/Webpack Install
+      - restore_cache:
+          keys:
+            - projectmanager-{{ checksum "yarn.lock" }}
+            - projectmanager
       - run:
-          name: Create DB
-          command: cp config/database.yml.ci config/database.yml export RAILS_ENV="test" export RACK_ENV="test" bundle exec rake db:create db:schema:load --trace
+          name: Yarn Install
+          command: yarn install --cache-folder ~/.cache/yarn
+      - save_cache:
+          key: projectmanager-{{ checksum "yarn.lock" }}
+          paths:
+            - ~/.cache/yarn
+
+      # Database Setup
       - run:
-          name: Run Tests
-          command: bundle exec rake test
-      - run:
-          name: Report coverage to CodeClimate
-          command: bundle exec codeclimate-test-reporter
-      - store_artifacts:
-          path: coverage
-          destination: coverage
+          name: Database setup
+          command: bin/rails db:schema:load --trace
+
+      # RSpec in parallel
+      - run: |
+          bundle exec rspec --profile 10 \
+                        --format RspecJunitFormatter \
+                        --out test_results/rspec.xml \
+                        --format progress \
+                        $(circleci tests glob "spec/**/*_spec.rb" | circleci tests split --split-by=timings)
+      # Saving time results
       - store_test_results:
-          path: /tmp/circle-junit
+          path: test_results
